@@ -1,14 +1,12 @@
 # STEEX: Steering Counterfactual Explanations with Semantics
 
-This folder contains all the code and instructions to:
+This repository contains all the code and instructions to:
 - download and organize datasets
-- train decision models on the datasets (densenet)
-- train a semantic segmentation network on the datasets (deeplabv3)
-- train a SEAN semantic auto-encoder
-- generate counterfactual explanations
-- evaluate obtained counterfactual explanations
-
-We plan to release soon a plug-and-play github of this folder, with pretrained weights for the various networks.
+- train decision models on the datasets (with a densenet)
+- train a semantic segmentation network on the datasets (with a DeepLabv3)
+- train a semantic auto-encoder and generator (with SEAN)
+- generate counterfactual explanations (with our method STEEX)
+- evaluate obtained counterfactual explanations (with FID, MNAC and FVA)
 
 ## Installation
 
@@ -28,28 +26,36 @@ python preprocess_celeba.py
 ```
 
  At the end, the dataset directory should look like this.
-For CelebaAMask-HQ: 
-`image_train = '/path/to/dataset/CelebAMask-HQ/train/images'`
-`mask_train = '/path/to/dataset/CelebAMask-HQ/train/labels'`
-`image_val = '/path/to/dataset/CelebAMask-HQ/test/images'`
-`attributes_path = '/path/to/dataset/CelebAMask-HQ/CelebAMask-HQ-attribute-anno.txt'`
+ 
+```
+CelebAMask-HQ
+image_train = '/path/to/dataset/CelebAMask-HQ/train/images'
+mask_train = '/path/to/dataset/CelebAMask-HQ/train/labels'
+image_val = '/path/to/dataset/CelebAMask-HQ/test/images'
+attributes_path = '/path/to/dataset/CelebAMask-HQ/CelebAMask-HQ-attribute-anno.txt'
+```
 
-For CelebA:
-`image_train = '/path/to/dataset/celeba_squared_128/img_squared128_celeba_train'`
-`image_val = '/path/to/dataset/celeba_squared_128/img_squared128_celeba_test'`
-`attributes_path = '/path/to/dataset/celeba_squared_128/list_attr_celeba.txt'`
+```
+CelebA:
+image_train = '/path/to/dataset/celeba_squared_128/img_squared128_celeba_train'
+image_val = '/path/to/dataset/celeba_squared_128/img_squared128_celeba_test'
+attributes_path = '/path/to/dataset/celeba_squared_128/list_attr_celeba.txt'
+```
 
-For BDD-OIA
-`image_train = "/path/to/dataset/bdd-oia/lastframe/train_25k_images_actions.json"`
-`decision_train = "/path/to/dataset/bdd-oia/lastframe/train_25k_images_reasons.json"`
-`image_val = "/path/to/dataset/bdd-oia/lastframe/val_25k_images_actions.json"`
-`decision_val = "/path/to/dataset/bdd-oia/lastframe/val_25k_images_reasons.json"`
+```
+BDD-OIA
+image_train = "/path/to/dataset/bdd-oia/lastframe/train_25k_images_actions.json"
+decision_train = "/path/to/dataset/bdd-oia/lastframe/train_25k_images_reasons.json"
+image_val = "/path/to/dataset/bdd-oia/lastframe/val_25k_images_actions.json"
+decision_val = "/path/to/dataset/bdd-oia/lastframe/val_25k_images_reasons.json"
+```
 
-For BDD100k
-`images_train = "/path/to/dataset/BDD/bdd100k/seg/images/train"`
-`mask_train = "/path/to/dataset/BDD/bdd100k/seg/labels/train"`
-`images_val = "/path/to/dataset/BDD/bdd100k/seg/images/val"`
-
+```
+BDD100k
+images_train = "/path/to/dataset/BDD/bdd100k/seg/images/train"
+mask_train = "/path/to/dataset/BDD/bdd100k/seg/labels/train"
+images_val = "/path/to/dataset/BDD/bdd100k/seg/images/val"
+```
 
 ## Train decision models
 
@@ -117,7 +123,7 @@ Run
 python compute_success_rate.py
 ```
 
-2. FrÃ©chet Inception Distance (FID)
+2. Fréchet Inception Distance (FID)
 Run the following bash command to get the FID score.
 ```bash
 python -m pytorch_fid ./results_counterfactual/<name_exp>/real_images ./results_counterfactual/<name_exp>/final_images
