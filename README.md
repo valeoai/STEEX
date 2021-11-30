@@ -1,6 +1,8 @@
 # STEEX: Steering Counterfactual Explanations with Semantics
 
-This repository contains all the code and instructions to:
+This repository is the official implementation of the [STEEX paper](https://arxiv.org/abs/2111.09094). 
+
+It contains all the code and instructions to:
 - download and organize datasets
 - train decision models on the datasets (with a densenet)
 - train a semantic segmentation network on the datasets (with a DeepLabv3)
@@ -147,3 +149,20 @@ Run the following bash command to get the MNAC score.
 python compute_mnac.py
 ```
 
+## Citation
+
+If you use this code, please cite the following paper:
+```
+@article{steex,
+  author    = {Paul Jacob and
+               {\'{E}}loi Zablocki and
+               Hedi Ben{-}Younes and
+               Micka{\"{e}}l Chen and
+               Patrick P{\'{e}}rez and
+               Matthieu Cord},
+  title     = {{STEEX:} Steering Counterfactual Explanations with Semantics},
+  journal   = {CoRR},
+  volume    = {abs/2111.09094},
+  year      = {2021},
+}
+```
