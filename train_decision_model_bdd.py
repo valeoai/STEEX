@@ -1,0 +1,215 @@
+import os
+import json
+import argparse
+
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import torchvision
+import torchvision.models as models
+
+from PIL import Image
+from tqdm import tqdm
+from torchvision import transforms as TR
+
+from data.bdd_dataset import BDDOIADataset
+from models.DecisionDensenetModel import DecisionDensenetModel
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+class Args:
+
+    checkpoints_dir = "/path/to/checkopints/dir"
+    data_dir = "/path/to/data/dir"
+
+    decision_model_name = 'decision_model_bdd'
+    image_root = os.path.join(data_dir, "data/")
+    gt_root_train = os.path.join(data_dir, "train_25k_images_actions.json")
+    gt_root_val = os.path.join(data_dir, "val_25k_images_actions.json")
+    reason_root_train = os.path.join(data_dir, "train_25k_images_reasons.json")
+    reason_root_val = os.path.join(data_dir, "val_25k_images_reasons.json")
+
+    load_size = (512, 256)
+    batch_size = 8
+    num_epochs = 5
+    optimizer = 'adam'
+    lr = 0.0001
+    train_attributes_idx = [0, 1, 2, 3]
+
+
+opt=Args()
+
+
+# Prepare data
+dataset_train = BDDOIADataset(imageRoot = opt.image_root,
+                        gtRoot = opt.gt_root_train,
+                        reasonRoot = opt.reason_root_train,
+                        cropSize = opt.load_size,
+                       )
+
+dataset_val = BDDOIADataset(imageRoot = opt.image_root,
+                        gtRoot = opt.gt_root_val,
+                        reasonRoot = opt.reason_root_val,
+                        cropSize = opt.load_size,
+                       )
+
+dataloader_train = torch.utils.data.DataLoader(dataset_train,batch_size=opt.batch_size, shuffle=True, num_workers=4)
+dataloader_val = torch.utils.data.DataLoader(dataset_val,batch_size=opt.batch_size, shuffle=False, num_workers=4)
+
+def train_one_epoch():
+
+    print("Number of batches:", len(dataloader_train))
+    total_loss = 0
+    stat_loss = 0
+
+    total_acc = np.zeros(len(opt.train_attributes_idx))
+    stat_acc = np.zeros(len(opt.train_attributes_idx))
+
+    model.train()
+
+    for batch_idx, batch_data in enumerate(tqdm(dataloader_train)):
+        batch_data['image'] = batch_data['image'].to(device)
+        batch_data['target'] = batch_data['target'].to(device)
+
+        # Forward pass
+        optimizer.zero_grad()
+        inputs = batch_data['image']
+
+        pred = model(inputs)
+        pred_labels = torch.where(pred > 0.5 , 1.0,0.0)
+
+        real_labels = torch.index_select(batch_data['target'],1,torch.tensor(opt.train_attributes_idx).to(device))
+
+
+        # Compute loss and gradients
+        loss = criterion(pred,real_labels)
+        acc = compute_accuracy(pred_labels,real_labels)
+
+        stat_loss += loss.item()
+        total_loss += loss.item()
+        stat_acc += acc
+        total_acc += acc
+
+
+        loss.backward()
+        optimizer.step()
+
+
+        batch_interval = 50
+        if (batch_idx+1) % batch_interval == 0:
+            log_string(' ---- batch: %03d ----' % (batch_idx+1))
+            log_string('mean loss on the last 50 batches: %f'%(stat_loss/batch_interval))
+            log_string('mean accuracy on the last 50 batches: '+ str(stat_acc/batch_interval))
+            stat_loss = 0
+            stat_acc = 0
+
+
+    total_mean_loss = total_loss/len(dataloader_train)
+    total_mean_acc = total_acc/len(dataloader_train)
+    log_string('mean loss over training set: %f'%(total_mean_loss))
+    log_string('mean accuracy over training set: ' + str(total_mean_acc))
+
+    return total_mean_loss
+
+
+
+def evaluate_one_epoch():
+
+    model.eval()
+
+    total_loss = 0
+    stat_loss = 0
+    total_acc = np.zeros(len(opt.train_attributes_idx))
+    stat_acc = np.zeros(len(opt.train_attributes_idx))
+
+    print("Number of batches:", len(dataloader_val))
+
+    for batch_idx, batch_data in enumerate(tqdm(dataloader_val)):
+        batch_data['image'] = batch_data['image'].to(device)
+        batch_data['target'] = batch_data['target'].to(device)
+
+        # Forward pass
+
+        inputs = batch_data['image']
+        with torch.no_grad():
+            pred = model(inputs)
+            pred_labels = torch.where(pred > 0.5 , 1.0,0.0)
+
+            real_labels = torch.index_select(batch_data['target'],1,torch.tensor(opt.train_attributes_idx).to(device))
+
+        # Compute loss and metrics
+        loss = criterion(pred,real_labels)
+        acc = compute_accuracy(pred_labels,real_labels)
+
+        stat_loss += loss.item()
+        total_loss += loss.item()
+        stat_acc += acc
+        total_acc += acc
+
+
+        batch_interval = 50
+        if (batch_idx+1) % batch_interval == 0:
+            log_string(' ---- batch: %03d ----' % (batch_idx+1))
+            log_string('mean loss on the last 50 batches: %f'%(stat_loss/batch_interval))
+            log_string('mean accuracy on the last 50 batches: ' + str(stat_acc/batch_interval))
+            stat_loss = 0
+            stat_acc = 0
+
+
+    total_mean_loss = total_loss/len(dataloader_val)
+    total_mean_acc = total_acc/len(dataloader_val)
+
+    log_string('mean loss over validation set: %f'%(total_mean_loss))
+    log_string('mean accuracy over validation set: '+str(total_mean_acc))
+
+
+    return total_mean_loss
+
+model = DecisionDensenetModel(num_classes=len(opt.train_attributes_idx), pretrained=True)
+
+if opt.optimizer == 'adam':
+    optimizer = torch.optim.Adam(model.parameters(),lr=opt.lr)
+else:
+    optimizer = torch.optim.SGD(model.parameters(),lr=opt.lr)
+
+criterion = nn.BCELoss(reduction='mean')
+
+def compute_accuracy(pred, target):
+    same_ids = (pred == target).float().cpu()
+    return torch.mean(same_ids,axis=0).numpy()
+
+model.to(device)
+
+LOG_DIR	= os.path.join(opt.checkpoints_dir, opt.decision_model_name)
+
+if not os.path.exists(LOG_DIR):
+    os.mkdir(LOG_DIR)
+
+LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'a')
+LOG_FOUT.write(str(opt)+'\n')
+
+def log_string(out_str):
+    LOG_FOUT.write(out_str+'\n')
+    LOG_FOUT.flush()
+    print(out_str)
+
+lowest_loss = 100000
+log_string("Starting training from the beginning.")
+
+for epoch in range(opt.num_epochs):
+
+    # Train one epoch
+    log_string(' **** EPOCH: %03d ****' % (epoch+1))
+    train_one_epoch()
+
+    # Evaluate one epoch
+    log_string(' **** EVALUATION AFTER EPOCH %03d ****' % (epoch+1))
+    total_mean_loss = evaluate_one_epoch()
+    print("validation loss", total_mean_loss)
+    if total_mean_loss < lowest_loss:
+        lowest_loss = total_mean_loss
+        save_dict = {'epoch': epoch+1, 'optimizer_state_dict': optimizer.state_dict(), 'loss': total_mean_loss, 'model_state_dict': model.state_dict()}
+        torch.save(save_dict, os.path.join(LOG_DIR, 'checkpoint.tar'))
+        print("saved new checkpoint")
+
