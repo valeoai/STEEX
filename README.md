@@ -1,6 +1,9 @@
 # STEEX: Steering Counterfactual Explanations with Semantics
 
-This repository is the official implementation of the [STEEX paper](https://arxiv.org/abs/2111.09094). 
+![image](./img/architecture_overview.png)
+**Figure:** *Counterfactual explanations with STEEX*
+
+This repository is the official implementation of [STEEX](https://arxiv.org/abs/2111.09094). 
 
 It contains all the code and instructions to:
 - download and organize datasets
@@ -10,7 +13,15 @@ It contains all the code and instructions to:
 - generate counterfactual explanations (with our method STEEX)
 - evaluate obtained counterfactual explanations (with FID, MNAC and FVA)
 
+
+
 ## Installation
+
+Clone this repo.
+```bash
+git clone https://github.com/valeoai/STEEX.git
+cd STEEX/
+```
 
 This code requires PyTorch, python 3+ and Pyqt5. Please install dependencies by
 ```bash
@@ -166,3 +177,4 @@ If you use this code, please cite the following paper:
   year      = {2021},
 }
 ```
+
