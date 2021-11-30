@@ -1,8 +1,5 @@
 # STEEX: Steering Counterfactual Explanations with Semantics
 
-![image](./img/architecture_overview.png)
-**Figure:** *Counterfactual explanations with STEEX*
-
 This repository is the official implementation of [STEEX](https://arxiv.org/abs/2111.09094). 
 
 It contains all the code and instructions to:
@@ -13,7 +10,8 @@ It contains all the code and instructions to:
 - generate counterfactual explanations (with our method STEEX)
 - evaluate obtained counterfactual explanations (with FID, MNAC and FVA)
 
-
+![image](./img/architecture_overview.png)
+**Figure:** *Counterfactual explanations with STEEX*
 
 ## Installation
 
@@ -118,7 +116,7 @@ Run the following commmand
 python generate_counterfactuals.py --dataset_name <bdd_or_celeba_or_celebamhq> --checkpoints_dir <path_to_checkpoints_dir> --image_dir <path_to_image_dir> --label_dir <path_to_label_dir> --decision_model_ckpt <decision_model_name> --name_exp <the_experience_name>
 ```
 
-The option `target_attribute` specifies the class of interest. Keep the default value (0) for Move forward vs. Stop on BDD. For the face datasets (CelebA and CelebAMask-HQ), `--target_attribute 1` is for the Smile classification and `--target_attribute 2` is for the Young classification.
+The option `--target_attribute` specifies the class of interest. Keep the default value (0) for Move forward vs. Stop on BDD. For the face datasets (CelebA and CelebAMask-HQ), `--target_attribute 1` is for the Smile classification and `--target_attribute 2` is for the Young classification.
 
 The general setting targets all regions. To generate *region-targeted* counterfactual explanations, you can specify the regions (separated by commas) with the option `--specified_regions`. See at the top of the file `generate_counterfactual.py` the list of possible regions.
 For example, for CelebA or CelebAMask-HQ: `--specified_regions skin,nose,glasses`. For BDD: `--specified_regions road,car,motorcycle`.
@@ -130,25 +128,26 @@ The whole list of options is available in the `options/` folder.
 
 For evaluations, make sure to change the path to the experiment folder (placeholders `<path_to_expe_folders` and `<name_exp>`) at the top of each file.
 
-1. Success Rate
+1. **Success Rate**
 Run 
 ```bash
 python compute_success_rate.py
 ```
 
-2. Fréchet Inception Distance (FID)
+2. **Fréchet Inception Distance (FID)**
 Run the following bash command to get the FID score.
 ```bash
 python -m pytorch_fid ./results_counterfactual/<name_exp>/real_images ./results_counterfactual/<name_exp>/final_images
 ```
 
-3. Face Verification Accuracy (FVA)
+3. **Face Verification Accuracy (FVA)**
 Run the following bash command to get the FVA score. 
 ```bash
 python compute_fva.py
 ```
 
-4. Mean Number of Attribute Changes (MNAC)
+4. **Mean Number of Attribute Changes (MNAC)**
+
 4.1. The first time, you need to train the VGGFace2 oracle model on the 40 attributes for both CelebA and CelebAMask-HQ. The training is done by the file `train_vggface2_oracle.py`. Choose at the top in the Args either CelebA or CelebAMask-HQ (simply comment/uncomment corresponding code block). Also, precise the data path `<data_dir>` and the checkpoint directory `<checkpoints_dir>`.
 ```bash
 python train_vggface2_oracle.py
