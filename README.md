@@ -29,34 +29,34 @@ python preprocess_celeba.py
 
  At the end, the dataset directory should look like this.
  
+CelebAMask-HQ:
 ```
-CelebAMask-HQ
-image_train = '/path/to/dataset/CelebAMask-HQ/train/images'
-mask_train = '/path/to/dataset/CelebAMask-HQ/train/labels'
-image_val = '/path/to/dataset/CelebAMask-HQ/test/images'
-attributes_path = '/path/to/dataset/CelebAMask-HQ/CelebAMask-HQ-attribute-anno.txt'
+image_train     = "/path/to/dataset/CelebAMask-HQ/train/images"
+mask_train      = "/path/to/dataset/CelebAMask-HQ/train/labels"
+image_val       = "/path/to/dataset/CelebAMask-HQ/test/images"
+attributes_path = "/path/to/dataset/CelebAMask-HQ/CelebAMask-HQ-attribute-anno.txt"
 ```
 
-```
 CelebA:
-image_train = '/path/to/dataset/celeba_squared_128/img_squared128_celeba_train'
-image_val = '/path/to/dataset/celeba_squared_128/img_squared128_celeba_test'
-attributes_path = '/path/to/dataset/celeba_squared_128/list_attr_celeba.txt'
+```
+image_train     = "/path/to/dataset/celeba_squared_128/img_squared128_celeba_train"
+image_val       = "/path/to/dataset/celeba_squared_128/img_squared128_celeba_test"
+attributes_path = "/path/to/dataset/celeba_squared_128/list_attr_celeba.txt"
 ```
 
+BDD-OIA:
 ```
-BDD-OIA
-image_train = "/path/to/dataset/bdd-oia/lastframe/train_25k_images_actions.json"
+image_train    = "/path/to/dataset/bdd-oia/lastframe/train_25k_images_actions.json"
 decision_train = "/path/to/dataset/bdd-oia/lastframe/train_25k_images_reasons.json"
-image_val = "/path/to/dataset/bdd-oia/lastframe/val_25k_images_actions.json"
-decision_val = "/path/to/dataset/bdd-oia/lastframe/val_25k_images_reasons.json"
+image_val      = "/path/to/dataset/bdd-oia/lastframe/val_25k_images_actions.json"
+decision_val   = "/path/to/dataset/bdd-oia/lastframe/val_25k_images_reasons.json"
 ```
 
+BDD100k:
 ```
-BDD100k
 images_train = "/path/to/dataset/BDD/bdd100k/seg/images/train"
-mask_train = "/path/to/dataset/BDD/bdd100k/seg/labels/train"
-images_val = "/path/to/dataset/BDD/bdd100k/seg/images/val"
+mask_train   = "/path/to/dataset/BDD/bdd100k/seg/labels/train"
+images_val   = "/path/to/dataset/BDD/bdd100k/seg/images/val"
 ```
 
 ## Train decision models
