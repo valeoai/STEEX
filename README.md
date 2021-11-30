@@ -129,19 +129,22 @@ The whole list of options is available in the `options/` folder.
 For evaluations, make sure to change the path to the experiment folder (placeholders `<path_to_expe_folders` and `<name_exp>`) at the top of each file.
 
 1. **Success Rate**
-Run 
+
+To get the succes rate, run the following command: 
 ```bash
 python compute_success_rate.py
 ```
 
 2. **Fréchet Inception Distance (FID)**
-Run the following bash command to get the FID score.
+
+Run the following bash command to get the FID score:
 ```bash
 python -m pytorch_fid ./results_counterfactual/<name_exp>/real_images ./results_counterfactual/<name_exp>/final_images
 ```
 
 3. **Face Verification Accuracy (FVA)**
-Run the following bash command to get the FVA score. 
+
+Run the following bash command to get the FVA score:
 ```bash
 python compute_fva.py
 ```
