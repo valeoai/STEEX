@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
 import os
+import pickle
+import argparse
 
 import numpy as np
 import torch
@@ -12,21 +15,26 @@ from data.faceattribute_dataset import FaceAttributesDataset
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--checkpoint_dir', type=str, default='/path/to/checkpoints', help='the path of the checkpoints')
+parser.add_argument('--dataroot', type=str, default='/path/to/dataroot', help='the path of the dataroot')
+parser.add_argument('--celeba_or_celebamhq', type=str, default='celebamhq')
+config=parser.parse_args()
+
+
 class Args:
-    checkpoints_dir = "/path/to/checkpoints/dir"
-    data_dir = "/path/to/data/dir"
 
-    # FOR CELEBAMASK-HQ
-    oracle_name = 'oracle_model_celebamhq'
-    image_path_train = os.path.join(data_dir, "train", "images")
-    image_path_val = os.path.join(data_dir, "test", "images")
-    attributes_path = os.path.join(data_dir, "CelebAMask-HQ-attribute-anno.txt")
+    if config.celeba_or_celebamhq == "celebamhq":
+        oracle_name = 'celebamaskhq'
+        image_path_train = os.path.join(config.dataroot, "CelebAMask-HQ", "CelebAMask-HQ", "train", "images")
+        image_path_val = os.path.join(config.dataroot, "CelebAMask-HQ", "CelebAMask-HQ", "test", "images")
+        attributes_path = os.path.join(config.dataroot, "CelebAMask-HQ", "CelebAMask-HQ", "CelebAMask-HQ-attribute-anno.txt")
 
-    ## FOR CELEBA
-    #oracle_name = 'oracle_model_celeba'
-    #image_path_train = os.path.join(data_dir, "img_squared128_celeba_train")
-    #image_path_val = os.path.join(data_dir, "img_squared128_celeba_test")
-    #attributes_path = os.path.join(data_dir, "list_attr_celeba.txt")
+    elif config.celeba_or_celebamhq == "celeba":
+        oracle_name = 'celeba'
+        image_path_train = os.path.join(config.dataroot, "celeba_squared_128", "img_squared128_celeba_train")
+        image_path_val = os.path.join(config.dataroot, "celeba_squared_128", "img_squared128_celeba_test")
+        attributes_path = os.path.join(config.dataroot, "celeba_squared_128", "list_attr_celeba.txt")
 
     optimizer = 'adam'
     lr = 0.0001
@@ -34,7 +42,7 @@ class Args:
     gamma_scheduler = 0.5
     num_epochs = 5
 
-    oracle_pretraining_path = os.path.join(checkpoints_dir, "vggface2_pretrainings_for_oracle/resnet50_ft_dag.pth")
+    oracle_pretraining_path = os.path.join(config.checkpoint_dir, "vggface2_pretrainings_for_oracle/resnet50_ft_dag.pth")
 
 opt=Args()
 
@@ -166,7 +174,7 @@ def compute_accuracy(pred, target):
 
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=opt.step_size, gamma=opt.gamma_scheduler, verbose=True)
 
-LOG_DIR = os.path.join(opt.checkpoints_dir, opt.oracle_name)
+LOG_DIR = os.path.join(config.checkpoint_dir, "oracle_attribute", opt.oracle_name)
 
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
@@ -195,7 +203,7 @@ for epoch in range(start_epoch, opt.num_epochs):
     if total_mean_loss < lowest_loss:
         lowest_loss = total_mean_loss
         save_dict = {'epoch': epoch+1, 'optimizer_state_dict': optimizer.state_dict(), 'loss': total_mean_loss, 'model_state_dict': model.state_dict()}
-        torch.save(save_dict, os.path.join(opt.checkpoints_dir, opt.oracle_name, 'checkpoint.tar'))
+        torch.save(save_dict, os.path.join(config.checkpoint_dir, "oracle_attribute", opt.oracle_name, 'checkpoint.tar'))
 
     scheduler.step()
 

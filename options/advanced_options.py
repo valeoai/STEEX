@@ -9,8 +9,11 @@ class CelebAOptions(BaseOptions):
     def initialize(self, parser):
         BaseOptions.initialize(self, parser)
 
-        parser.set_defaults(name="sean_celeba_gpu_2_batch_8")
-        parser.set_defaults(decision_model_ckpt="decision_model_celeba")
+        parser.set_defaults(name="celeba")
+        parser.set_defaults(decision_model_ckpt="celeba")
+
+        parser.set_defaults(split="val")
+        parser.set_defaults(use_ground_truth_masks=False)
 
         parser.set_defaults(semantic_nc=19)
         parser.set_defaults(preprocess_mode="scale_width_and_crop")
@@ -27,9 +30,11 @@ class CelebAMHQOptions(BaseOptions):
     def initialize(self, parser):
         BaseOptions.initialize(self, parser)
 
-        parser.set_defaults(name="CelebA-HQ_pretrained")
+        parser.set_defaults(name="celebamaskhq")
+        parser.set_defaults(decision_model_ckpt="celebamaskhq")
 
-        parser.set_defaults(decision_model_ckpt="decision_model_celebamhq")
+        parser.set_defaults(split="test")
+        parser.set_defaults(use_ground_truth_masks=False)
 
         parser.set_defaults(semantic_nc=19)
         parser.set_defaults(preprocess_mode="scale_width_and_crop")
@@ -45,9 +50,11 @@ class BDDOptions(BaseOptions):
     def initialize(self, parser):
         BaseOptions.initialize(self, parser)
 
-        parser.set_defaults(name="sean_bdd_gpu_4_batch_4")
+        parser.set_defaults(name="bdd")
+        parser.set_defaults(decision_model_ckpt="bdd")
 
-        parser.set_defaults(decision_model_ckpt="decision_model_bdd")
+        parser.set_defaults(split="val")
+        parser.set_defaults(use_ground_truth_masks=False)
 
         parser.set_defaults(contain_dontcare_label=True)
 
@@ -74,6 +81,24 @@ class Options(BaseOptions):
             raise NotImplementedError
 
         opt = parser.parse()
+
+        # Update paths
+        if opt.dataset_name == "celeba":
+            if opt.use_ground_truth_masks:
+                print("No ground-truth masks for CelebA, please set --use_groun_truth_masks to False")
+                assert False
+            opt.image_dir = os.path.join(opt.dataroot, "celeba_squared_128", "img_squared128_celeba_%s" % split)
+            opt.label_dir = os.path.join(opt.dataroot, "celeba_squared_128", "seg_squared128_celeba_%s" % split)
+        elif opt.dataset_name == "celebamhq":
+            mask_dir = "labels" if opt.use_ground_truth_masks else "predicted_masks"
+            opt.image_dir = os.path.join(opt.dataroot, "CelebAMask-HQ", "CelebAMask-HQ", opt.split, "images")
+            opt.label_dir = os.path.join(opt.dataroot, "CelebAMask-HQ", "CelebAMask-HQ", opt.split, mask_dir)
+        elif opt.dataset_name == "bdd":
+            mask_dir = "labels" if opt.use_ground_truth_masks else "predicted_masks"
+            opt.image_dir = os.path.join(opt.dataroot, "BDD", "bdd100k", "seg", "images", opt.split)
+            opt.label_dir = os.path.join(opt.dataroot, "BDD", "bdd100k", "seg", mask_dir, opt.split)
+        else:
+            raise NotImplementedError
 
         return opt
 

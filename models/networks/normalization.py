@@ -71,7 +71,7 @@ def get_nonspade_norm_layer(opt, norm_type='instance'):
 
 
 class ACE(nn.Module):
-    def __init__(self, config_text, norm_nc, label_nc, ACE_Name=None, status='train', spade_params=None, use_rgb=True, dataset_name="celeba"):
+    def __init__(self, config_text, norm_nc, label_nc, ACE_Name=None, status='train', spade_params=None, use_rgb=True, dataset_name="celeba", style_dir="styles_test"):
         super().__init__()
 
         self.ACE_Name = ACE_Name
@@ -84,6 +84,7 @@ class ACE(nn.Module):
         self.blending_beta = nn.Parameter(torch.zeros(1), requires_grad=True)
         self.noise_var = nn.Parameter(torch.zeros(norm_nc), requires_grad=True)
         self.dataset_name = dataset_name
+        self.style_dir = style_dir
 
 
         assert config_text.startswith('spade')
@@ -163,12 +164,9 @@ class ACE(nn.Module):
 
                             if self.status == 'test' and self.save_npy and self.ACE_Name=='up_2_ACE_0':
                                 tmp = style_codes[i][j].detach().cpu().numpy()
-                                dir_path = 'styles_test'
-
-                                ############### some problem with obj_dic[i]
 
                                 im_name = os.path.basename(obj_dic[i])
-                                folder_path = os.path.join(dir_path, 'style_codes', im_name, str(j))
+                                folder_path = os.path.join(self.style_dir, 'style_codes', im_name, str(j))
                                 if not os.path.exists(folder_path):
                                     os.makedirs(folder_path)
 

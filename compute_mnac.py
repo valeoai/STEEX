@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
 import os
+import pickle
+import argparse
 
 import numpy as np
 import torch
@@ -12,17 +15,26 @@ from models.OracleResnetModel import OracleResnet
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# CHANGE HERE
-checkpoint_dir = "/path/to/checkpoints/dir" # Change here to the path of checkpoints
-oracle_name = "name_of_oracle" # Change here to the name fo trained oracle name (either for celeba, either for celebamhq)
-name_exp = "name_exp" # replace here with real exp name
+parser = argparse.ArgumentParser()
+parser.add_argument('--checkpoint_dir', type=str, default='/path/to/checkpoints', help='the path of the checkpoints')
+parser.add_argument('--expe', type=str, default='/path/to/experiment', help='the path of the experiment')
+config=parser.parse_args()
 
-expe_folder = "results_counterfactual"
-oracle_checkpoint_path = os.path.join(checkpoint_dir, oracle_name, "checkpoint.tar")
-name_exp = os.path.join(expe_folder, name_exp)
+# Load the real image folder
+with open(os.path.join(config.expe, "config.pkl"), "rb") as f:
+    opt = pickle.load(f)
+if opt.dataset_name == "celeba":
+    assert opt.split == "val"
+    real_images = os.path.join(opt.dataroot, "celeba_squared_128", "processed_img_squared128_celeba_val")
+    oracle_checkpoint_path = os.path.join(config.checkpoint_dir, "oracle_attribute", "celeba", "checkpoint.tar")
+elif opt.dataset_name == "celebamhq":
+    assert opt.split == "test"
+    real_images = os.path.join(opt.dataroot, "CelebAMask-HQ", "CelebAMask-HQ", opt.split, "processed_images")
+    oracle_checkpoint_path = os.path.join(config.checkpoint_dir, "oracle_attribute", "celebamaskhq", "checkpoint.tar")
+else:
+    raise NotImplementedError
 
-oracle_pretraining_path = os.path.join(checkpoint_dir, "vggface2_pretrainings_for_oracle/resnet50_ft_dag.pth")
-
+oracle_pretraining_path = os.path.join(config.checkpoint_dir, "vggface2_pretrainings_for_oracle/resnet50_ft_dag.pth")
 
 # Load oracle model and trained weights
 model = OracleResnet(weights_path=oracle_pretraining_path, freeze_layers=True)
@@ -36,17 +48,17 @@ print("Checkpoint has been correctly loaded. Starting from epoch "+ str(start_ep
 
 total_nb_changed_attributes = 0
 
-images = os.listdir(os.path.join(name_exp, 'real_images'))
+images = os.listdir(os.path.join(config.expe, 'final_images'))
 for idx,image_name in enumerate(tqdm(images)):
 
     # Treat real images
-    real_image = Image.open(os.path.join(name_exp,'real_images', image_name)).convert('RGB')
+    real_image = Image.open(os.path.join(real_images, image_name)).convert('RGB')
     real_image = TR.functional.resize(real_image, (224, 224), Image.BICUBIC)
     real_image = TR.functional.to_tensor(real_image)
     real_image = TR.functional.normalize(real_image, (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 
     # Treat counterfactual images
-    final_image = Image.open(os.path.join(name_exp, 'final_images', image_name)).convert('RGB')
+    final_image = Image.open(os.path.join(config.expe, 'final_images', image_name)).convert('RGB')
     final_image = TR.functional.resize(final_image, (224, 224), Image.BICUBIC)
     final_image = TR.functional.to_tensor(final_image)
     final_image = TR.functional.normalize(final_image, (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))

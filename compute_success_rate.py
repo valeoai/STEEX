@@ -1,12 +1,15 @@
+#!/usr/bin/env python3
 import os
 import pickle
+import argparse
 
 import numpy as np
 
-expe_folder = "results_counterfactual"
-name_exp = "name_exp" # replace here with real exp name
+parser = argparse.ArgumentParser()
+parser.add_argument('--expe', type=str, default='/path/to/experiment', help='the path of the experiment')
+config=parser.parse_args()
 
-experiment_dir = os.path.join(expe_folder, name_exp, "pkl_dir")
+experiment_dir = os.path.join(config.expe, "pkl_dir")
 
 successes = []
 pkl_folders = os.listdir(experiment_dir)

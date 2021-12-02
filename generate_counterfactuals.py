@@ -1,6 +1,7 @@
 import os
 import sys
 import pickle
+import shutil
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -47,14 +48,18 @@ if len(opt.specified_regions) > 0:
 if not os.path.exists(opt.results_dir):
     os.mkdir(opt.results_dir)
 LOG_DIR = os.path.join(opt.results_dir, opt.name_exp)
+opt.style_dir = os.path.join(LOG_DIR, "styles_test")
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
 directories = {
-        "query_image_dir": os.path.join(LOG_DIR, "real_images"),
-        "reconstructed_image_dir": os.path.join(LOG_DIR, "reconstructed_images"),
         "counterfactual_image_dir":  os.path.join(LOG_DIR, "final_images"),
         "pkl_dir": os.path.join(LOG_DIR, "pkl_dir"),
         }
+if opt.save_query_image:
+    directories["query_image_dir"] = os.path.join(LOG_DIR, "real_images")
+if opt.save_reconstruction:
+    directories["reconstructed_image_dir"] = os.path.join(LOG_DIR, "reconstructed_images")
+
 for dir_name, dir_path in directories.items():
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -65,7 +70,7 @@ with open(config_path, "wb") as f:
 
 # Load decision model
 decision_model = DecisionDensenetModel(num_classes=opt.decision_model_nb_classes, pretrained=True)
-checkpoint = torch.load(os.path.join(opt.checkpoints_dir, opt.decision_model_ckpt, 'checkpoint.tar'))
+checkpoint = torch.load(os.path.join(opt.checkpoints_dir, "decision_densenet", opt.decision_model_ckpt, 'checkpoint.tar'))
 decision_model.load_state_dict(checkpoint['model_state_dict'])
 start_epoch = checkpoint['epoch']
 print("Decision model correctly loaded. Starting from epoch", start_epoch, "with last val loss", checkpoint["loss"])
@@ -90,6 +95,7 @@ for img in range(min(len(dataloader), opt.how_many)):
     target = (initial_scores[:, opt.target_attribute] < 0.5).double()
 
     # Compute reconstruction, it also generates the style codes in the folder
+    # Computing the reconstructed image generates an ACE.npy file that contains the encoded image
     reconstructed_query_image = generator(data_i, mode='inference').detach().cpu().float().numpy()
 
     # Get the style_codes which is the spatialized z tensor
@@ -98,7 +104,7 @@ for img in range(min(len(dataloader), opt.how_many)):
         img_path = os.path.split(image_path)[1]
         # loop over codes
         for i in range(20):
-            style_path = os.path.join('styles_test/style_codes/', img_path, str(i), 'ACE.npy')
+            style_path = os.path.join(opt.style_dir, 'style_codes', img_path, str(i), 'ACE.npy')
             if os.path.exists(style_path):
                 code = np.load(style_path)
                 style_codes_numpy[j, i] += code
@@ -170,7 +176,6 @@ for img in range(min(len(dataloader), opt.how_many)):
     for j, image_path in enumerate(data_i["path"]):
         # Create folder for each image of the batch
         img_path = os.path.split(image_path)[1]
-        path_exp = os.path.join(directories["query_image_dir"], img_path.replace('.jpg', ''))
 
         # Save counterfactual image
         counterfactual_image = (np.transpose(counterfactual_image_tensor[j, :, :, :], (1, 2, 0)) + 1) / 2.0 * 255.0
@@ -178,29 +183,41 @@ for img in range(min(len(dataloader), opt.how_many)):
         counterfactual_image = Image.fromarray(counterfactual_image).convert('RGB')
         counterfactual_image.save(os.path.join(directories["counterfactual_image_dir"], img_path.replace(".jpg", ".png")))
 
+        # Delete the saved style codes
+        if opt.remove_saved_style_codes:
+            style_codes = os.path.join(opt.style_dir, 'style_codes', img_path)
+            shutil.rmtree(style_codes)
+            style_codes = os.path.join(opt.style_dir, 'style_codes', img_path+"_custom")
+            shutil.rmtree(style_codes)
+
         # Save query image
-        query_image = Image.open(os.path.join(opt.image_dir, img_path)).convert('RGB')
-        query_image = TR.functional.resize(query_image, SIZE, Image.BICUBIC) # Resize real image
-        query_image.save(os.path.join(directories["query_image_dir"], img_path.replace(".jpg", ".png")))
+        if opt.save_query_image:
+            query_image = Image.open(os.path.join(opt.image_dir, img_path)).convert('RGB')
+            query_image = TR.functional.resize(query_image, SIZE, Image.BICUBIC) # Resize real image
+            query_image.save(os.path.join(directories["query_image_dir"], img_path.replace(".jpg", ".png")))
 
         # Save query reconstruction
-        reconstructed_query_image_j = reconstructed_query_image[j, :, :, :]
-        reconstructed_query_image_j = (np.transpose(reconstructed_query_image_j, (1, 2, 0)) + 1) / 2.0 * 255.0
-        reconstructed_query_image_j = reconstructed_query_image_j.astype(np.uint8)
-        reconstructed_query_image_j = Image.fromarray(reconstructed_query_image_j).convert('RGB')
-        reconstructed_query_image_j.save(os.path.join(directories["reconstructed_image_dir"], img_path.replace(".jpg", ".png")))
+        if opt.save_reconstruction:
+            reconstructed_query_image_j = reconstructed_query_image[j, :, :, :]
+            reconstructed_query_image_j = (np.transpose(reconstructed_query_image_j, (1, 2, 0)) + 1) / 2.0 * 255.0
+            reconstructed_query_image_j = reconstructed_query_image_j.astype(np.uint8)
+            reconstructed_query_image_j = Image.fromarray(reconstructed_query_image_j).convert('RGB')
+            reconstructed_query_image_j.save(os.path.join(directories["reconstructed_image_dir"], img_path.replace(".jpg", ".png")))
 
         # Save extra stuff
         successful = np.abs(final_scores[j, opt.target_attribute] - target[j].detach().cpu().float().numpy()) < 0.5
         dump_dict = {
                   "successful": successful,
-                  "initial_z": style_codes_numpy[j],
-                  "final_z": z[j].detach().cpu().float().numpy(),
                   "initial_scores": initial_scores[j].detach().cpu().float().numpy(),
                   "final_scores": final_scores[j],
                   "loss_decision": final_loss_decision[j],
                   "loss_proxmity": final_loss_proximity[j],
                   }
+
+        if opt.save_initial_final_z:
+            dump_dict["initial_z"] = style_codes_numpy[j]
+            dump_dict["final_z"] = z[j].detach().cpu().float().numpy()
+
         with open(os.path.join(directories["pkl_dir"], img_path.replace(".jpg", ".pkl")), 'wb') as f:
           pickle.dump(dump_dict, f)
 

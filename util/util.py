@@ -202,7 +202,7 @@ def save_network(net, label, epoch, opt):
 
 def load_network(net, label, epoch, opt):
     save_filename = '%s_net_%s.pth' % (epoch, label)
-    save_dir = os.path.join(opt.checkpoints_dir, opt.name)
+    save_dir = os.path.join(opt.checkpoints_dir, "sean", opt.name)
     save_path = os.path.join(save_dir, save_filename)
     weights = torch.load(save_path)
     net.load_state_dict(weights)

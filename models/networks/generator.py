@@ -27,6 +27,7 @@ class SPADEGenerator(BaseNetwork):
         self.opt = opt
         nf = opt.ngf
         dataset_name = opt.dataset_name
+        style_dir = opt.style_dir
 
         self.sw, self.sh = self.compute_latent_vector_size(opt)
 
@@ -35,20 +36,20 @@ class SPADEGenerator(BaseNetwork):
 
         self.fc = nn.Conv2d(self.opt.semantic_nc, 16 * nf, 3, padding=1)
 
-        self.head_0 = SPADEResnetBlock(16 * nf, 16 * nf, opt, Block_Name='head_0', dataset_name=dataset_name)
+        self.head_0 = SPADEResnetBlock(16 * nf, 16 * nf, opt, Block_Name='head_0', dataset_name=dataset_name, style_dir=style_dir)
 
-        self.G_middle_0 = SPADEResnetBlock(16 * nf, 16 * nf, opt, Block_Name='G_middle_0', dataset_name=dataset_name)
-        self.G_middle_1 = SPADEResnetBlock(16 * nf, 16 * nf, opt, Block_Name='G_middle_1', dataset_name=dataset_name)
+        self.G_middle_0 = SPADEResnetBlock(16 * nf, 16 * nf, opt, Block_Name='G_middle_0', dataset_name=dataset_name, style_dir=style_dir)
+        self.G_middle_1 = SPADEResnetBlock(16 * nf, 16 * nf, opt, Block_Name='G_middle_1', dataset_name=dataset_name, style_dir=style_dir)
 
-        self.up_0 = SPADEResnetBlock(16 * nf, 8 * nf, opt, Block_Name='up_0', dataset_name=dataset_name)
-        self.up_1 = SPADEResnetBlock(8 * nf, 4 * nf, opt, Block_Name='up_1', dataset_name=dataset_name)
-        self.up_2 = SPADEResnetBlock(4 * nf, 2 * nf, opt, Block_Name='up_2', dataset_name=dataset_name)
-        self.up_3 = SPADEResnetBlock(2 * nf, 1 * nf, opt, Block_Name='up_3', use_rgb=False, dataset_name=dataset_name)
+        self.up_0 = SPADEResnetBlock(16 * nf, 8 * nf, opt, Block_Name='up_0', dataset_name=dataset_name, style_dir=style_dir)
+        self.up_1 = SPADEResnetBlock(8 * nf, 4 * nf, opt, Block_Name='up_1', dataset_name=dataset_name, style_dir=style_dir)
+        self.up_2 = SPADEResnetBlock(4 * nf, 2 * nf, opt, Block_Name='up_2', dataset_name=dataset_name, style_dir=style_dir)
+        self.up_3 = SPADEResnetBlock(2 * nf, 1 * nf, opt, Block_Name='up_3', use_rgb=False, dataset_name=dataset_name, style_dir=style_dir)
 
         final_nc = nf
 
         if opt.num_upsampling_layers == 'most':
-            self.up_4 = SPADEResnetBlock(1 * nf, nf // 2, opt, Block_Name='up_4', dataset_name=dataset_name)
+            self.up_4 = SPADEResnetBlock(1 * nf, nf // 2, opt, Block_Name='up_4', dataset_name=dataset_name, style_dir=style_dir)
             final_nc = nf // 2
 
         self.conv_img = nn.Conv2d(final_nc, 3, 3, padding=1)

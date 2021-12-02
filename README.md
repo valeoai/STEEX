@@ -21,7 +21,7 @@ git clone https://github.com/valeoai/STEEX.git
 cd STEEX/
 ```
 
-This code requires PyTorch, python 3+ and Pyqt5. Please install dependencies by
+This code requires PyTorch (1.8.1), python 3+, and cuda (11.1). Please install dependencies by
 ```bash
 pip install -r requirements.txt
 ```
@@ -30,6 +30,8 @@ pip install -r requirements.txt
 
 This code uses four datasets: [CelebA](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html), [CelebAMask-HQ](https://github.com/switchablenorms/CelebAMask-HQ), [BDD100k](https://bair.berkeley.edu/blog/2018/05/30/bdd/), and the [BDD-OIA](https://github.com/Twizwei/bddoia_project) extension.
 Please download and unzip the datasets from the respective websites.
+
+To preprocess the masks for CelebAMask-HQ, please follow the intructions provided [here](https://github.com/switchablenorms/CelebAMask-HQ/tree/master/face_parsing).
 
 To preprocess the CelebA dataset, like previous works, we crop and resize images to (128, 128) images. This is done with our script
 ```bash
@@ -55,6 +57,7 @@ attributes_path = "/path/to/dataset/celeba_squared_128/list_attr_celeba.txt"
 
 BDD-OIA:
 ```
+bddoia_data    = "/path/to/dataset/bdd-oia/lastframe/data"
 image_train    = "/path/to/dataset/bdd-oia/lastframe/train_25k_images_actions.json"
 decision_train = "/path/to/dataset/bdd-oia/lastframe/train_25k_images_reasons.json"
 image_val      = "/path/to/dataset/bdd-oia/lastframe/val_25k_images_actions.json"
@@ -80,6 +83,13 @@ To train the decision model on BDD-OIA, run the command below. Please precise th
 python train_decision_model_bdd.py
 ```
 
+At the end, the checkpoints must be stored with the following structure:
+```
+/path/to/checkpoints/decision_densenet/celeba
+/path/to/checkpoints/decision_densenet/celebamaskhq
+/path/to/checkpoints/decision_densenet/bdd
+```
+
 ## Train Semantic Segmentation Model
 
 Train two semantic segmentation models, one for CelebaMask-HQ, one for BDD with the following command:
@@ -87,6 +97,12 @@ Train two semantic segmentation models, one for CelebaMask-HQ, one for BDD with 
 python train_deeplabv3.py
 ```
 Simply specify the path to the checkpoints directory where the models will be saved (`checkpoints_dir` in the Args class) and toggle the commented block to switch from CelebAMask-HQ to BDD100K-seg. 
+
+At the end, the checkpoints must be stored with the following structure:
+```
+/path/to/checkpoints/deeplabv3/celebamaskhq
+/path/to/checkpoints/deeplabv3/bdd
+```
 
 
 ## Generate Semantic Segmentation Masks on All Data
@@ -108,13 +124,22 @@ At the end, the masks should then be stored at:
 For CelebA and BDD, train a semantic SEAN AutoEncoder with the official github repository: https://github.com/ZPdesu/SEAN by specifying the data path to the image and to the semantic segmentation masks generated in the step above.
 For CelebAMask-HQ, we used the [original SEAN weights](https://github.com/ZPdesu/SEAN#generating-images-using-pretrained-models) provided by the authors in their repository: `CelebA-HQ_pretrained`
 
+At the end, the checkpoints must be stored with the following structure:
+```
+/path/to/checkpoints/sean/celeba
+/path/to/checkpoints/sean/celebamaskhq
+/path/to/checkpoints/sean/bdd
+```
 
 ## Generating Counterfactual Explanations
 
 Run the following commmand
 ```bash
-python generate_counterfactuals.py --dataset_name <bdd_or_celeba_or_celebamhq> --checkpoints_dir <path_to_checkpoints_dir> --image_dir <path_to_image_dir> --label_dir <path_to_label_dir> --decision_model_ckpt <decision_model_name> --name_exp <the_experience_name>
+python generate_counterfactuals.py --dataset_name <bdd_or_celeba_or_celebamhq> --checkpoints_dir <path_to_checkpoints_dir> --dataroot <path_to_dataroot> --name_exp <the_experience_name>
 ```
+
+The `checkpoints_dir` contains the the checkpoints for the decision model as well as the sean encoder-decoder.
+The `dataroot` is the folder where the data is stored.
 
 The option `--target_attribute` specifies the class of interest. Keep the default value (0) for Move forward vs. Stop on BDD. For the face datasets (CelebA and CelebAMask-HQ), `--target_attribute 1` is for the Smile classification and `--target_attribute 2` is for the Young classification.
 
@@ -126,40 +151,46 @@ The whole list of options is available in the `options/` folder.
 
 ## Evaluation
 
-For evaluations, make sure to change the path to the experiment folder (placeholders `<path_to_expe_folders` and `<name_exp>`) at the top of each file.
-
 1. **Success Rate**
 
 To get the succes rate, run the following command: 
 ```bash
-python compute_success_rate.py
+python compute_success_rate.py --expe </path/to/results_dir/name_exp>
 ```
 
 2. **Fréchet Inception Distance (FID)**
 
 Run the following bash command to get the FID score:
 ```bash
-python -m pytorch_fid ./results_counterfactual/<name_exp>/real_images ./results_counterfactual/<name_exp>/final_images
+python compute_fid.py --expe </path/to/results_dir/name_exp>
 ```
+The processed folders are the query images resized to the correct dimension. They can be obtained (and then moved to the path indicated in the `compute_fid.py` file) by using the flag `--save_query_image True` in the script `generate_counterfactuals.py`.
 
 3. **Face Verification Accuracy (FVA)**
 
 Run the following bash command to get the FVA score:
 ```bash
-python compute_fva.py
+python compute_fva.py --expe </path/to/results_dir/name_exp>
 ```
 
 4. **Mean Number of Attribute Changes (MNAC)**
 
-4.1. The first time, you need to train the VGGFace2 oracle model on the 40 attributes for both CelebA and CelebAMask-HQ. The training is done by the file `train_vggface2_oracle.py`. Choose at the top in the Args either CelebA or CelebAMask-HQ (simply comment/uncomment corresponding code block). Also, precise the data path `<data_dir>` and the checkpoint directory `<checkpoints_dir>`.
+4.1. The first time, you need to train the VGGFace2 oracle model on the 40 attributes for both CelebA and CelebAMask-HQ. The training is done by the file `train_vggface2_oracle.py`. Train both an oracle for CelebA with `--celeba_or_celebamhq celeba` and CelebAMask-HQ with `--celeba_or_celebamhq celebamhq`.
 ```bash
-python train_vggface2_oracle.py
+python train_vggface2_oracle.py --dataroot </path/to/dataroot> --checkpoint_dir </path/to/checkpoints/dir>
 ```
+
+At the end, the checkpoints must be stored with the following structure:
+```
+/path/to/checkpoints/oracle_attribute/celeba
+/path/to/checkpoints/oracle_attribute/celebamaskhq
+```
+
 
 4.2. When the oracle model is trained and saved, simply put the oracle name at the top of the `compute_mnac.py` file (placeholder `<oracle_name>`)
 Run the following bash command to get the MNAC score. 
 ```bash
-python compute_mnac.py
+python compute_mnac.py --expe </path/to/results_dir/name_exp> --checkpoint_dir </path/to/checkpoints/dir>
 ```
 
 ## Citation
