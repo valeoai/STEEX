@@ -26,6 +26,15 @@ This code requires PyTorch (1.8.1), python 3+, and cuda (11.1). Please install d
 pip install -r requirements.txt
 ```
 
+All checkpoints are provided in the release, please extract them. It should look like this:
+```
+/path/to/checkpoints/decision_densenet
+/path/to/checkpoints/deeplabv3
+/path/to/checkpoints/sean
+/path/to/checkpoints/oracle_attribute
+/path/to/checkpoints/vggface2_pretrainings_for_oracle
+```
+
 ## Dataset Preparation
 
 This code uses four datasets: [CelebA](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html), [CelebAMask-HQ](https://github.com/switchablenorms/CelebAMask-HQ), [BDD100k](https://bair.berkeley.edu/blog/2018/05/30/bdd/), and the [BDD-OIA](https://github.com/Twizwei/bddoia_project) extension.
