@@ -202,9 +202,13 @@ Run the following bash command to get the MNAC score.
 python compute_mnac.py --expe </path/to/results_dir/name_exp> --checkpoint_dir </path/to/checkpoints/dir>
 ```
 
+## Disclaimer
+
+There might be some bugs or errors. Feel free to open an issue and/or contribute to improve the repo.
+
 ## Citation
 
-If you use this code, please cite the following paper:
+If this code was useful for your research, please cite the following paper:
 ```
 @article{steex,
   author    = {Paul Jacob and
