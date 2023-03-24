@@ -211,7 +211,7 @@ There might be some bugs or errors. Feel free to open an issue and/or contribute
 
 If the code helped you for your research, please consider citing
 ```
-@inproceedings{steex,
+@inproceedings{jacob2022steex,
   author    = {Paul Jacob and
                {\'{E}}loi Zablocki and
                Hedi Ben{-}Younes and
